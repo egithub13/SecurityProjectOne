@@ -13,26 +13,27 @@ public class DBAdapter {
 			
 	// Field Names:
 	public static final String KEY_ROWID = "_id";
-	public static final String KEY_PROJECT_NAME = "project name";
-
-	public static final String[] ALL_KEYS = new String[] {KEY_ROWID, KEY_PROJECT_NAME};
+	public static final String KEY_TASK = "task";
+	public static final String KEY_DATE = "date";
+	
+	public static final String[] ALL_KEYS = new String[] {KEY_ROWID, KEY_TASK, KEY_DATE};
 	
 	// Column Numbers for each Field Name:
 	public static final int COL_ROWID = 0;
-	public static final int COL_PROJECT_NAME = 1;
+	public static final int COL_TASK = 1;
+	public static final int COL_DATE = 2;
 
 	// DataBase info:
 	public static final String DATABASE_NAME = "dbToDo";
-	public static final String DATABASE_TABLE_PROJECTS = "projects";
-	//public static final String DATABASE_TABLE_PARTS = "parts";
-
-	public static final int DATABASE_VERSION = 1; // The version number must be incremented each time a change to DB structure occurs.
+	public static final String DATABASE_TABLE = "mainToDo";
+	public static final int DATABASE_VERSION = 3; // The version number must be incremented each time a change to DB structure occurs.
 		
 	//SQL statement to create database
-	private static final String CREATE_TABLE_PROJECTS =
-			"CREATE TABLE " + DATABASE_TABLE_PROJECTS
+	private static final String DATABASE_CREATE_SQL = 
+			"CREATE TABLE " + DATABASE_TABLE 
 			+ " (" + KEY_ROWID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
-			+ KEY_PROJECT_NAME + " TEXT NOT NULL, "
+			+ KEY_TASK + " TEXT NOT NULL, "
+			+ KEY_DATE + " TEXT"
 			+ ");";
 	
 	private final Context context;
@@ -59,16 +60,17 @@ public class DBAdapter {
 	// Add a new set of values to be inserted into the database.
 	public long insertRow(String task, String date) {
 		ContentValues initialValues = new ContentValues();
-		initialValues.put(KEY_PROJECT_NAME, task);
+		initialValues.put(KEY_TASK, task);
+		initialValues.put(KEY_DATE, date);
 				
 		// Insert the data into the database.
-		return db.insert(DATABASE_TABLE_PROJECTS, null, initialValues);
+		return db.insert(DATABASE_TABLE, null, initialValues);
 	}
 	
 	// Delete a row from the database, by rowId (primary key)
 	public boolean deleteRow(long rowId) {
 		String where = KEY_ROWID + "=" + rowId;
-		return db.delete(DATABASE_TABLE_PROJECTS, where, null) != 0;
+		return db.delete(DATABASE_TABLE, where, null) != 0;
 	}
 	
 	public void deleteAll() {
@@ -85,7 +87,7 @@ public class DBAdapter {
 	// Return all data in the database.
 	public Cursor getAllRows() {
 		String where = null;
-		Cursor c = 	db.query(true, DATABASE_TABLE_PROJECTS, ALL_KEYS, where, null, null, null, null, null);
+		Cursor c = 	db.query(true, DATABASE_TABLE, ALL_KEYS, where, null, null, null, null, null);
 		if (c != null) {
 			c.moveToFirst();
 		}
@@ -95,7 +97,7 @@ public class DBAdapter {
 	// Get a specific row (by rowId)
 	public Cursor getRow(long rowId) {
 		String where = KEY_ROWID + "=" + rowId;
-		Cursor c = 	db.query(true, DATABASE_TABLE_PROJECTS, ALL_KEYS,
+		Cursor c = 	db.query(true, DATABASE_TABLE, ALL_KEYS, 
 						where, null, null, null, null, null);
 		if (c != null) {
 			c.moveToFirst();
@@ -107,9 +109,10 @@ public class DBAdapter {
 	public boolean updateRow(long rowId, String task, String date) {
 		String where = KEY_ROWID + "=" + rowId;
 		ContentValues newValues = new ContentValues();
-		newValues.put(KEY_PROJECT_NAME, task);
+		newValues.put(KEY_TASK, task);
+		newValues.put(KEY_DATE, date);
 		// Insert it into the database.
-		return db.update(DATABASE_TABLE_PROJECTS, newValues, where, null) != 0;
+		return db.update(DATABASE_TABLE, newValues, where, null) != 0;
 	}
 
 	
@@ -121,7 +124,7 @@ public class DBAdapter {
 
 		@Override
 		public void onCreate(SQLiteDatabase _db) {
-			_db.execSQL(CREATE_TABLE_PROJECTS);
+			_db.execSQL(DATABASE_CREATE_SQL);			
 		}
 
 		@Override
@@ -130,7 +133,7 @@ public class DBAdapter {
 					+ " to " + newVersion + ", which will destroy all old data!");
 			
 			// Destroy old database:
-			_db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE_PROJECTS);
+			_db.execSQL("DROP TABLE IF EXISTS " + DATABASE_TABLE);
 			
 			// Recreate new database:
 			onCreate(_db);

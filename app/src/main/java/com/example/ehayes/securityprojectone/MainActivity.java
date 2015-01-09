@@ -1,70 +1,64 @@
 package com.example.ehayes.securityprojectone;
 
 import android.app.Activity;
-import android.support.v7.app.ActionBarActivity;
+import android.database.Cursor;
 import android.os.Bundle;
+import android.text.TextUtils;
+import android.text.format.Time;
 import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ListView;
-import android.widget.Toast;
-
-import java.util.ArrayList;
+import android.widget.SimpleCursorAdapter;
 
 
-public class MainActivity extends Activity implements AdapterView.OnItemClickListener {
+public class MainActivity extends Activity  {
 
-    DBAdapter db;
+    DBAdapter myDb;
     EditText editText;
-    Button button;
-    String[] projects;
-
+    Time today = new Time(Time.getCurrentTimezone());
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        db = new DBAdapter(getApplicationContext());
-
         editText = (EditText) findViewById(R.id.editText);
-
-        button = (Button) findViewById(R.id.button);
-        button.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                addArray();
-                Toast.makeText(getApplicationContext(),editText.getText().toString() + " added",Toast.LENGTH_SHORT).show();
-                editText.setText("");
-
-            }
-        });
-        ArrayAdapter adapter = new ArrayAdapter(this,android.R.layout.simple_list_item_1,addArray());
-
-        ListView list = (ListView) findViewById(R.id.list);
-        list.setAdapter(adapter);
-        list.setOnItemClickListener(this);
+        openDb();
+        populateListView();
     }
-
-    public String[] addArray(){
-
-        projects = new String[100];
-        for(int i = 0;i < 100;i++)
-        {
-            projects[i] = "Stuart Scott";
-        }
-        return projects;
-    }
-
 
     @Override
-    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-        int listIndex = position + 1;
-        Toast.makeText(getApplicationContext(),listIndex + " Position was called",Toast.LENGTH_SHORT).show();
-
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_main,menu);
+        return true;
     }
+
+    private void openDb(){
+        myDb = new DBAdapter(this);
+        myDb.open();
+    }
+
+    public void onClickAddTask(View v){
+        today.setToNow();
+        String timeStamp = today.format("%Y-%m-%d %H:%M:%S");
+        if(!TextUtils.isEmpty(editText.getText().toString())){
+            myDb.insertRow(editText.getText().toString(),timeStamp);
+        }
+        populateListView();
+        editText.setText("");
+    }
+
+    private void populateListView(){
+        Cursor cursor = myDb.getAllRows();
+        String[]fromFieldNames = new String[]{DBAdapter.KEY_ROWID,DBAdapter.KEY_TASK};
+        int[]toViewIds = new int[]{R.id.textViewItemNumber,R.id.textViewItemTask};
+        SimpleCursorAdapter myCursorAdapter;
+        myCursorAdapter = new SimpleCursorAdapter(getBaseContext(),R.layout.item_layout,cursor,
+                fromFieldNames,toViewIds,0);
+        ListView myList = (ListView) findViewById(R.id.listViewTasks);
+        myList.setAdapter(myCursorAdapter);
+    }
+
+
 }
